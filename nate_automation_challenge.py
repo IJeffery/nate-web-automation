@@ -1,5 +1,6 @@
 import asyncio
 import random
+import logging
 from pyppeteer import launch
 
 EXAMPLE_DATA = {
@@ -12,6 +13,7 @@ EXAMPLE_DATA = {
 
 
 async def update_all_visible_elements(page):
+    logging.info("Updating page with visible element attributes")
     await page.evaluate('''
         var all = document.getElementsByTagName("*");
         for (var i = 0, max = all.length; i < max; i++) {
@@ -27,6 +29,7 @@ async def update_all_visible_elements(page):
 
 
 async def save_file(data, name):
+    logging.info("Saving file: " + name)
     file = open(name, "w")
     file.write(data)
     file.close()
@@ -120,10 +123,18 @@ async def intercept_css(response):
         await save_file(data, file_name)
 
 
+async def log_navigation(request):
+    if request.url.endswith('.html'):
+        logging.info("Navigating to: " + request.url)
+
+
 async def main():
+    logging.basicConfig(encoding='utf-8', level=logging.INFO)
+    logging.info("Starting browser")
     browser = await launch()
     page = await browser.newPage()
     page.on('response', lambda res: asyncio.ensure_future(intercept_css(res)))
+    page.on('request', lambda req: asyncio.ensure_future(log_navigation(req)))
     await page_1(page)
     await page_2(page)
     await page_3(page)
